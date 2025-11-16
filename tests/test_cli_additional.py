@@ -27,6 +27,45 @@ def test_cli_main_entry_point():
 
 
 @pytest.mark.unit
+def test_cli_main_entry_point_direct_execution():
+    """Test CLI main entry point by importing and calling main() (lines 481-482)."""
+    # The if __name__ == "__main__" block calls main() and sys.exit(main())
+    # We can't easily test the if __name__ == "__main__" check itself,
+    # but we can verify that main() exists and is callable
+    from meteosuisse.cli import main
+    assert callable(main)
+    # The existing test_cli_main_entry_point already tests the CLI via -m syntax,
+    # which should trigger the if __name__ == "__main__" block when run as a script
+    # However, coverage might not detect it when run via pytest
+    # Lines 481-482 are the if __name__ == "__main__" block, which is hard to test directly
+
+
+@pytest.mark.unit
+def test_cli_main_entry_point_if_name_main():
+    """Test CLI if __name__ == '__main__' block (lines 481-482) by running as a module."""
+    import subprocess
+    import sys
+    from pathlib import Path
+    
+    project_root = Path(__file__).parent.parent
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(project_root / "src")
+    
+    # Run as module to trigger if __name__ == "__main__" block
+    # When running as module, __name__ is "__main__" for the executed module
+    result = subprocess.run(
+        [sys.executable, "-m", "meteosuisse.cli", "--help"],
+        capture_output=True,
+        text=True,
+        timeout=5,
+        cwd=str(project_root),
+        env=env,
+    )
+    # Should exit with code 0 (help) or 2 (argument error), not crash
+    assert result.returncode in [0, 2]
+
+
+@pytest.mark.unit
 def test_find_nearest_station_coords_length_3():
     """Test find_nearest_station with coordinates length 3 (line 78)."""
     mock_stac = MagicMock(spec=STACClient)

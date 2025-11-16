@@ -154,17 +154,18 @@ class ClimateData:
                     for tcol in time_cols:
                         if tcol in df.columns:
                             # Try DD.MM.YYYY format first (MeteoSwiss format), then fallback to auto-detect
+                            # Note: DD.MM.YYYY parsing creates timezone-naive datetimes (no timezone info in format)
+                            # We'll localize to UTC later if needed (line 213)
                             parsed_ddmm = pd.to_datetime(
                                 df[tcol],
                                 format="%d.%m.%Y %H:%M",
                                 errors="coerce",
-                                utc=True,
                             )
-                            # If DD.MM.YYYY format didn't work (all NaT), try auto-detection
+                            # If DD.MM.YYYY format didn't work (all NaT), try auto-detection with UTC
                             if parsed_ddmm.isna().all():
                                 df[tcol] = pd.to_datetime(df[tcol], errors="coerce", utc=True)
                             else:
-                                df[tcol] = parsed_ddmm
+                                df[tcol] = parsed_ddmm  # Timezone-naive, will be localized at line 213 if needed
                             # Remove rows with invalid timestamps
                             df = df[df[tcol].notna()]
                             if df.empty:

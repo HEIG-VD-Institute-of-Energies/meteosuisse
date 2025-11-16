@@ -184,15 +184,16 @@ class GroundBasedMeasurements:
                     for tcol in time_cols:
                         if tcol in df.columns:
                             # Try parsing with DD.MM.YYYY format first, then fallback to auto
+                            # Note: DD.MM.YYYY parsing creates timezone-naive datetimes (no timezone info in format)
+                            # We'll localize to UTC later if needed (line 244)
                             try:
                                 df[tcol] = pd.to_datetime(
                                     df[tcol],
                                     format="%d.%m.%Y %H:%M",
                                     errors="coerce",
-                                    utc=True,
-                                )
+                                )  # Timezone-naive, will be localized at line 244 if needed
                             except (ValueError, TypeError):
-                                # Fallback to auto-detection
+                                # Fallback to auto-detection with UTC
                                 df[tcol] = pd.to_datetime(df[tcol], errors="coerce", utc=True)
                             # Remove rows with invalid timestamps
                             df = df[df[tcol].notna()]
