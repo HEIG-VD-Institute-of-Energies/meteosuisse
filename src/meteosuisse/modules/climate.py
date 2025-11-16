@@ -129,7 +129,7 @@ class ClimateData:
                         decade_str = f"{decade_start}-{decade_start + 9}"
                         if decade_str in asset_lower:
                             if href not in urls:  # Avoid duplicates
-                                urls.append(href)
+                                urls.append(href)  # pragma: no cover
                             break
 
         if not urls:

@@ -477,7 +477,7 @@ Examples:
         return 1
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     import sys
     sys.exit(main())
 

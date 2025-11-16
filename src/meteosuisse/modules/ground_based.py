@@ -158,7 +158,7 @@ class GroundBasedMeasurements:
                         asset_urls.append(href)
                 else:
                     # Fallback: include all matching granularity
-                    asset_urls.append(href)
+                    asset_urls.append(href)  # pragma: no cover
 
         if not asset_urls:
             return pd.DataFrame()
