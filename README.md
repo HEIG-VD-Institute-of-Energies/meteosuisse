@@ -12,7 +12,6 @@ Source: MeteoSwiss (must be cited when using the data).
 - HTTPX client with retries and timeouts
 - Loguru file logging (rotation ≥ 1 MB)
 - orjson for fast JSON parsing
-- Ready for Quarto-based dynamic reporting
 
 ## Documentation
 
@@ -139,16 +138,16 @@ uv run python -m pytest
 
 ## Logging
 
-A rotating file log is written to `logs/meteosuisse.log` (DEBUG level, 1 MB rotation). Console output (if any) should use `rich`.
+A rotating file log is written to `artifacts/logs/meteosuisse.log` (DEBUG level, 1 MB rotation). Console output (if any) should use `rich` (no loguru console sink).
 
 ## Project Layout
 
 - `src/meteosuisse/` — package code
 - `data/` — cached/downloaded data
-- `figures/` — plots (if generated)
-- `models/` — serialized objects
-- `outputs/` — reports/exports
-- `logs/` — log files
+- `artifacts/figures/` — plots (generated)
+- `artifacts/reports/` — rendered reports
+- `artifacts/outputs/` — machine-generated outputs
+- `artifacts/logs/` — log files (rotated)
 - `tests/` — test suite
 
 ## Notes and Roadmap
