@@ -1,6 +1,7 @@
 import httpx
-import respx
 import pytest
+import respx
+
 from meteosuisse.main_client import MeteoSwissClient
 
 
@@ -26,5 +27,3 @@ def test_atmosphere_get_radio_soundings_not_implemented():
     client = MeteoSwissClient()
     with pytest.raises(NotImplementedError, match="Radio soundings data will be available Q1-2026"):
         client.atmosphere.get_radio_soundings()
-
-

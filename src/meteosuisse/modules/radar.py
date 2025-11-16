@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Optional
+
 from ..config import APIConfig
 from ..stac_client import STACClient
 
@@ -28,4 +29,3 @@ class RadarData:
             )
         finally:
             stac.close()
-

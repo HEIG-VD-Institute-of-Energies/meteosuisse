@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from pathlib import Path
-from typing import Optional
-import pandas as pd
 from io import StringIO
+from typing import Optional
+
 import httpx
-from ..config import APIConfig, TimeGranularity, UpdateFrequency
+import pandas as pd
+
 from ..client import HttpClient
-from ..data_fetcher import fetch_data_range
+from ..config import APIConfig, TimeGranularity, UpdateFrequency
 from ..stac_client import STACClient
 
 
@@ -99,7 +99,9 @@ class GroundBasedMeasurements:
         if passed_start is not None:
             start_year = passed_start.year
             end_year = passed_end.year if passed_end else start_year
-            current_year = pd.Timestamp.now(tz=passed_start.tzinfo if passed_start.tzinfo else None).year
+            current_year = pd.Timestamp.now(
+                tz=passed_start.tzinfo if passed_start.tzinfo else None
+            ).year
             # If start date is before current year, we need historical assets
             # Determine which decade assets we need (e.g., 2020-2029 covers 2020-2029)
             if start_year < current_year:
@@ -108,7 +110,7 @@ class GroundBasedMeasurements:
                 for year in range(start_year, min(end_year + 1, current_year + 1)):
                     decade_start = (year // 10) * 10
                     relevant_decades.add(decade_start)
-        
+
         # Select assets matching granularity/frequency pattern
         # Include historical assets if date range spans into historical periods
         asset_urls: list[str] = []
@@ -119,14 +121,16 @@ class GroundBasedMeasurements:
                 atype = str(asset.get("type", ""))
                 # Match asset name pattern: ogd-smn_STATION_gran_freq.csv
                 # e.g., ogd-smn_gve_h_recent.csv
-                if not (href.lower().endswith(".csv") or "text/csv" in atype or "text/plain" in atype):
+                if not (
+                    href.lower().endswith(".csv") or "text/csv" in atype or "text/plain" in atype
+                ):
                     continue
                 asset_lower = asset_key.lower()
-                
+
                 # Check if asset matches requested granularity
                 if f"_{gran_char}_" not in asset_lower:
                     continue
-                
+
                 # Select assets based on frequency and date range needs
                 if freq_str == "recent":
                     # Always include recent/now assets for current data
@@ -220,7 +224,16 @@ class GroundBasedMeasurements:
             sid = station_id.upper()
             matched = False
             # Common columns that may contain station identifiers (prioritize station_abbr)
-            for scol in ("station_abbr", "station", "station_id", "stn", "stationname", "name", "station_code", "stationcode"):
+            for scol in (
+                "station_abbr",
+                "station",
+                "station_id",
+                "stn",
+                "stationname",
+                "name",
+                "station_code",
+                "stationcode",
+            ):
                 if scol in df_all.columns:
                     col = df_all[scol].astype(str).str.upper()
                     df_all = df_all[col.eq(sid)]
@@ -233,7 +246,7 @@ class GroundBasedMeasurements:
                     mask = None
                     for c in obj_cols:
                         colu = df_all[c].astype(str).str.upper()
-                        col_mask = colu.eq(sid) | colu.str.contains(fr"\b{sid}\b", regex=True)
+                        col_mask = colu.eq(sid) | colu.str.contains(rf"\b{sid}\b", regex=True)
                         mask = col_mask if mask is None else (mask | col_mask)
                     if mask is not None and mask.any():
                         df_all = df_all[mask]
@@ -245,7 +258,7 @@ class GroundBasedMeasurements:
                 df_all.index = df_all.index.tz_localize("UTC")
             else:
                 df_all.index = df_all.index.tz_convert("UTC")
-            
+
             if passed_start is not None:
                 start_ts = pd.Timestamp(passed_start)
                 if start_ts.tzinfo is None:
@@ -260,12 +273,10 @@ class GroundBasedMeasurements:
                 else:
                     end_ts = end_ts.tz_convert("UTC")
                 df_all = df_all[df_all.index <= end_ts]
-        
+
         # Remove duplicate index entries (keep last)
         if isinstance(df_all.index, pd.DatetimeIndex):
             df_all = df_all[~df_all.index.duplicated(keep="last")]
             df_all = df_all.sort_index()
 
         return df_all
-
-

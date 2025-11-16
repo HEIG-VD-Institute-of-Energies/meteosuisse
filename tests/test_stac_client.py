@@ -1,6 +1,6 @@
-import json
-import respx
 import httpx
+import respx
+
 from meteosuisse.stac_client import STACClient
 
 
@@ -17,12 +17,8 @@ def test_stac_search_items_pagination():
         "links": [],
     }
 
-    respx.post(f"{base}/search").mock(
-        return_value=httpx.Response(200, json=first)
-    )
-    respx.get(f"{base}/search?next=token").mock(
-        return_value=httpx.Response(200, json=second)
-    )
+    respx.post(f"{base}/search").mock(return_value=httpx.Response(200, json=first))
+    respx.get(f"{base}/search?next=token").mock(return_value=httpx.Response(200, json=second))
 
     c = STACClient()
     try:
@@ -47,9 +43,7 @@ def test_stac_search_items_by_ids():
         "links": [],
     }
 
-    respx.post(f"{base}/search").mock(
-        return_value=httpx.Response(200, json=search_json)
-    )
+    respx.post(f"{base}/search").mock(return_value=httpx.Response(200, json=search_json))
 
     c = STACClient()
     try:
@@ -75,9 +69,7 @@ def test_stac_search_items_no_datetime():
         "links": [],
     }
 
-    respx.post(f"{base}/search").mock(
-        return_value=httpx.Response(200, json=search_json)
-    )
+    respx.post(f"{base}/search").mock(return_value=httpx.Response(200, json=search_json))
 
     c = STACClient()
     try:
@@ -101,9 +93,7 @@ def test_stac_list_station_ids():
         "links": [],
     }
 
-    respx.post(f"{base}/search").mock(
-        return_value=httpx.Response(200, json=search_json)
-    )
+    respx.post(f"{base}/search").mock(return_value=httpx.Response(200, json=search_json))
 
     c = STACClient()
     try:
@@ -126,9 +116,7 @@ def test_stac_get_station_item():
         "links": [],
     }
 
-    respx.post(f"{base}/search").mock(
-        return_value=httpx.Response(200, json=search_json)
-    )
+    respx.post(f"{base}/search").mock(return_value=httpx.Response(200, json=search_json))
 
     c = STACClient()
     try:
@@ -139,5 +127,3 @@ def test_stac_get_station_item():
     assert item is not None
     assert item["id"] == "gve"
     assert item["properties"]["title"] == "Geneva"
-
-

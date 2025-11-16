@@ -1,20 +1,14 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-import pytest
-import pandas as pd
 
-from meteosuisse.cli import (
-    haversine_distance,
-    find_nearest_station,
-    parse_geometry_input,
-    main,
-)
-from meteosuisse.stac_client import STACClient
-from meteosuisse.config import APIConfig
+import pandas as pd
+import pytest
 from rich.console import Console
+
+from meteosuisse.cli import find_nearest_station, haversine_distance, main, parse_geometry_input
+from meteosuisse.stac_client import STACClient
 
 
 @pytest.mark.unit
@@ -100,11 +94,11 @@ def test_parse_geometry_input_lat_lon_invalid_coords():
     # Invalid latitude (> 90)
     result = parse_geometry_input("100,6.127742")
     assert result is None
-    
+
     # Invalid longitude (> 180)
     result = parse_geometry_input("46.247519,200")
     assert result is None
-    
+
     # Invalid format (not float)
     result = parse_geometry_input("not_a_number,6.127742")
     assert result is None
@@ -114,7 +108,9 @@ def test_parse_geometry_input_lat_lon_invalid_coords():
 def test_parse_geometry_input_file_path_feature(tmp_path: Path):
     """Test parsing GeoJSON file path with Feature (lines 168-170)."""
     geojson_file = tmp_path / "feature.geojson"
-    geojson_file.write_text('{"type":"Feature","geometry":{"type":"Point","coordinates":[6.127742,46.247519]}}')
+    geojson_file.write_text(
+        '{"type":"Feature","geometry":{"type":"Point","coordinates":[6.127742,46.247519]}}'
+    )
     result = parse_geometry_input(str(geojson_file))
     assert result == (46.247519, 6.127742)
 
@@ -125,7 +121,7 @@ def test_parse_geometry_input_file_path_exception(tmp_path: Path):
     # Non-existent file
     result = parse_geometry_input(str(tmp_path / "nonexistent.geojson"))
     assert result is None
-    
+
     # Invalid JSON file
     invalid_file = tmp_path / "invalid.geojson"
     invalid_file.write_text("not json")
@@ -137,7 +133,9 @@ def test_parse_geometry_input_file_path_exception(tmp_path: Path):
 def test_parse_geometry_input_file_path_polygon(tmp_path: Path):
     """Test parsing GeoJSON file path with Polygon (lines 178-179)."""
     geojson_file = tmp_path / "polygon.geojson"
-    geojson_file.write_text('{"type":"Polygon","coordinates":[[[6.0,46.0],[6.1,46.0],[6.1,46.1],[6.0,46.1],[6.0,46.0]]]}')
+    geojson_file.write_text(
+        '{"type":"Polygon","coordinates":[[[6.0,46.0],[6.1,46.0],[6.1,46.1],[6.0,46.1],[6.0,46.0]]]}'
+    )
     result = parse_geometry_input(str(geojson_file))
     assert result is not None
     lat, lon = result
@@ -161,7 +159,7 @@ def test_find_nearest_station_no_items():
     mock_stac = MagicMock(spec=STACClient)
     mock_stac.search_items.return_value = []
     console = Console()
-    
+
     result = find_nearest_station(mock_stac, "collection_id", 46.247519, 6.127742, console)
     assert result is None
 
@@ -173,14 +171,25 @@ def test_find_nearest_station_invalid_geometry():
     mock_items = [
         {"id": "invalid", "geometry": None},
         {"id": "invalid2", "geometry": {"type": "LineString"}},
-        {"id": "invalid3", "geometry": {"type": "Point", "coordinates": [6.127742]}},  # Wrong length (line 77-78)
-        {"id": "invalid4", "geometry": {"type": "Point", "coordinates": []}},  # Empty coords (line 77-78)
-        {"id": "invalid5", "geometry": {"type": "Point", "coordinates": [6.127742, 46.247519, 100.0]}},  # 3 coords (line 77-78)
+        {
+            "id": "invalid3",
+            "geometry": {"type": "Point", "coordinates": [6.127742]},
+        },  # Wrong length (line 77-78)
+        {
+            "id": "invalid4",
+            "geometry": {"type": "Point", "coordinates": []},
+        },  # Empty coords (line 77-78)
+        {
+            "id": "invalid5",
+            "geometry": {"type": "Point", "coordinates": [6.127742, 46.247519, 100.0]},
+        },  # 3 coords (line 77-78)
     ]
     mock_stac.search_items.return_value = mock_items
     console = Console()
-    
-    result = find_nearest_station(mock_stac, "collection_id", 46.247519, 6.127742, console, max_stations=10)
+
+    result = find_nearest_station(
+        mock_stac, "collection_id", 46.247519, 6.127742, console, max_stations=10
+    )
     assert result is None  # Should return None when no valid geometries (line 91-92)
 
 
@@ -200,54 +209,46 @@ def test_find_nearest_station_with_items():
     ]
     mock_stac.search_items.return_value = mock_items
     console = Console()
-    
+
     # Search near GVE coordinates
-    result = find_nearest_station(mock_stac, "collection_id", 46.247519, 6.127742, console, max_stations=10)
+    result = find_nearest_station(
+        mock_stac, "collection_id", 46.247519, 6.127742, console, max_stations=10
+    )
     assert result is not None
     station_id, distance = result
     assert station_id.upper() == "GVE"
     assert distance < 1.0  # Should be very close
 
 
-@pytest.mark.unit
-def test_find_nearest_station_invalid_geometry():
-    """Test finding nearest station with invalid geometry."""
-    mock_stac = MagicMock(spec=STACClient)
-    mock_items = [
-        {"id": "invalid", "geometry": None},
-        {"id": "invalid2", "geometry": {"type": "LineString"}},
-    ]
-    mock_stac.search_items.return_value = mock_items
-    console = Console()
-    
-    result = find_nearest_station(mock_stac, "collection_id", 46.247519, 6.127742, console, max_stations=10)
-    assert result is None
-
-
 @pytest.mark.integration
 @patch("meteosuisse.cli.MeteoSwissClient")
 @patch("meteosuisse.cli.STACClient")
 @patch("meteosuisse.cli.setup_logging")
-def test_main_with_station_id(mock_setup_logging, mock_stac_client_class, mock_client_class, tmp_path: Path, monkeypatch):
+def test_main_with_station_id(
+    mock_setup_logging, mock_stac_client_class, mock_client_class, tmp_path: Path, monkeypatch
+):
     """Test CLI main function with --station-id."""
     import sys
-    
+
     # Mock client and data
     mock_client = MagicMock()
     # Create a proper DataFrame with columns
-    df = pd.DataFrame({
-        "temperature": [10.0, 11.0],
-        "humidity": [80, 85],
-        "pressure": [1013.25, 1014.0],
-    }, index=pd.DatetimeIndex(["2024-01-01", "2024-01-02"], tz="UTC"))
+    df = pd.DataFrame(
+        {
+            "temperature": [10.0, 11.0],
+            "humidity": [80, 85],
+            "pressure": [1013.25, 1014.0],
+        },
+        index=pd.DatetimeIndex(["2024-01-01", "2024-01-02"], tz="UTC"),
+    )
     mock_client.ground_based.get_automatic_weather_stations.return_value = df
     mock_client.ground_based.collections.automatic_weather_stations = "test_collection"
     mock_client.config = MagicMock()
     mock_client_class.return_value = mock_client
-    
+
     mock_stac = MagicMock()
     mock_stac_client_class.return_value = mock_stac
-    
+
     # Set up arguments
     test_args = [
         "meteosuisse",
@@ -261,10 +262,10 @@ def test_main_with_station_id(mock_setup_logging, mock_stac_client_class, mock_c
         str(tmp_path / "test_output.csv"),
     ]
     monkeypatch.setattr(sys, "argv", test_args)
-    
+
     # Run main
     result = main()
-    
+
     # Verify calls
     mock_client.ground_based.get_automatic_weather_stations.assert_called_once()
     assert result == 0
@@ -275,10 +276,17 @@ def test_main_with_station_id(mock_setup_logging, mock_stac_client_class, mock_c
 @patch("meteosuisse.cli.STACClient")
 @patch("meteosuisse.cli.setup_logging")
 @patch("meteosuisse.cli.find_nearest_station")
-def test_main_with_location(mock_find_nearest, mock_setup_logging, mock_stac_client_class, mock_client_class, tmp_path: Path, monkeypatch):
+def test_main_with_location(
+    mock_find_nearest,
+    mock_setup_logging,
+    mock_stac_client_class,
+    mock_client_class,
+    tmp_path: Path,
+    monkeypatch,
+):
     """Test CLI main function with --lat and --lon."""
     import sys
-    
+
     # Mock client and data
     mock_client = MagicMock()
     mock_df = MagicMock()
@@ -290,12 +298,12 @@ def test_main_with_location(mock_find_nearest, mock_setup_logging, mock_stac_cli
     mock_client.ground_based.get_automatic_weather_stations.return_value = mock_df
     mock_client.ground_based.collections.automatic_weather_stations = "test_collection"
     mock_client_class.return_value = mock_client
-    
+
     mock_stac = MagicMock()
     mock_stac_client_class.return_value = mock_stac
-    
+
     mock_find_nearest.return_value = ("GVE", 0.5)
-    
+
     # Set up arguments
     test_args = [
         "meteosuisse",
@@ -311,10 +319,10 @@ def test_main_with_location(mock_find_nearest, mock_setup_logging, mock_stac_cli
         str(tmp_path / "test_output.csv"),
     ]
     monkeypatch.setattr(sys, "argv", test_args)
-    
+
     # Run main
     main()
-    
+
     # Verify calls
     mock_find_nearest.assert_called_once()
     mock_client.ground_based.get_automatic_weather_stations.assert_called_once()
@@ -327,10 +335,18 @@ def test_main_with_location(mock_find_nearest, mock_setup_logging, mock_stac_cli
 @patch("meteosuisse.cli.setup_logging")
 @patch("meteosuisse.cli.parse_geometry_input")
 @patch("meteosuisse.cli.find_nearest_station")
-def test_main_with_geometry(mock_find_nearest, mock_parse_geometry, mock_setup_logging, mock_stac_client_class, mock_client_class, tmp_path: Path, monkeypatch):
+def test_main_with_geometry(
+    mock_find_nearest,
+    mock_parse_geometry,
+    mock_setup_logging,
+    mock_stac_client_class,
+    mock_client_class,
+    tmp_path: Path,
+    monkeypatch,
+):
     """Test CLI main function with --geometry."""
     import sys
-    
+
     # Mock client and data
     mock_client = MagicMock()
     mock_df = MagicMock()
@@ -342,13 +358,13 @@ def test_main_with_geometry(mock_find_nearest, mock_parse_geometry, mock_setup_l
     mock_client.ground_based.get_automatic_weather_stations.return_value = mock_df
     mock_client.ground_based.collections.automatic_weather_stations = "test_collection"
     mock_client_class.return_value = mock_client
-    
+
     mock_stac = MagicMock()
     mock_stac_client_class.return_value = mock_stac
-    
+
     mock_parse_geometry.return_value = (46.247519, 6.127742)
     mock_find_nearest.return_value = ("GVE", 0.5)
-    
+
     # Set up arguments
     test_args = [
         "meteosuisse",
@@ -360,10 +376,10 @@ def test_main_with_geometry(mock_find_nearest, mock_parse_geometry, mock_setup_l
         str(tmp_path / "test_output.csv"),
     ]
     monkeypatch.setattr(sys, "argv", test_args)
-    
+
     # Run main
     main()
-    
+
     # Verify calls
     mock_parse_geometry.assert_called_once()
     mock_find_nearest.assert_called_once()
@@ -375,10 +391,12 @@ def test_main_with_geometry(mock_find_nearest, mock_parse_geometry, mock_setup_l
 @patch("meteosuisse.cli.MeteoSwissClient")
 @patch("meteosuisse.cli.STACClient")
 @patch("meteosuisse.cli.setup_logging")
-def test_main_empty_dataframe(mock_setup_logging, mock_stac_client_class, mock_client_class, tmp_path: Path, monkeypatch):
+def test_main_empty_dataframe(
+    mock_setup_logging, mock_stac_client_class, mock_client_class, tmp_path: Path, monkeypatch
+):
     """Test CLI main function with empty DataFrame."""
     import sys
-    
+
     # Mock client and empty data
     mock_client = MagicMock()
     mock_df = MagicMock()
@@ -387,10 +405,10 @@ def test_main_empty_dataframe(mock_setup_logging, mock_stac_client_class, mock_c
     mock_client.ground_based.collections.automatic_weather_stations = "test_collection"
     mock_client.config = MagicMock()
     mock_client_class.return_value = mock_client
-    
+
     mock_stac = MagicMock()
     mock_stac_client_class.return_value = mock_stac
-    
+
     # Set up arguments
     test_args = [
         "meteosuisse",
@@ -402,10 +420,10 @@ def test_main_empty_dataframe(mock_setup_logging, mock_stac_client_class, mock_c
         str(tmp_path / "test_output.csv"),
     ]
     monkeypatch.setattr(sys, "argv", test_args)
-    
+
     # Run main
     result = main()
-    
+
     # Verify calls
     mock_client.ground_based.get_automatic_weather_stations.assert_called_once()
     assert result == 1  # Should return 1 for empty DataFrame
@@ -417,26 +435,31 @@ def test_main_empty_dataframe(mock_setup_logging, mock_stac_client_class, mock_c
 @patch("meteosuisse.cli.MeteoSwissClient")
 @patch("meteosuisse.cli.STACClient")
 @patch("meteosuisse.cli.setup_logging")
-def test_main_climate_data_type(mock_setup_logging, mock_stac_client_class, mock_client_class, tmp_path: Path, monkeypatch):
+def test_main_climate_data_type(
+    mock_setup_logging, mock_stac_client_class, mock_client_class, tmp_path: Path, monkeypatch
+):
     """Test CLI main function with --data-type climate."""
     import sys
-    
+
     # Mock client and data
     mock_client = MagicMock()
     # Create a proper DataFrame with columns
-    df = pd.DataFrame({
-        "temperature": [10.0, 11.0],
-        "humidity": [80, 85],
-        "pressure": [1013.25, 1014.0],
-    }, index=pd.DatetimeIndex(["2024-01-01", "2024-01-02"], tz="UTC"))
+    df = pd.DataFrame(
+        {
+            "temperature": [10.0, 11.0],
+            "humidity": [80, 85],
+            "pressure": [1013.25, 1014.0],
+        },
+        index=pd.DatetimeIndex(["2024-01-01", "2024-01-02"], tz="UTC"),
+    )
     mock_client.climate.get_homogeneous_series.return_value = df
     mock_client.ground_based.collections.automatic_weather_stations = "test_collection"
     mock_client.config = MagicMock()
     mock_client_class.return_value = mock_client
-    
+
     mock_stac = MagicMock()
     mock_stac_client_class.return_value = mock_stac
-    
+
     # Set up arguments
     test_args = [
         "meteosuisse",
@@ -450,10 +473,10 @@ def test_main_climate_data_type(mock_setup_logging, mock_stac_client_class, mock
         str(tmp_path / "test_output.csv"),
     ]
     monkeypatch.setattr(sys, "argv", test_args)
-    
+
     # Run main
     result = main()
-    
+
     # Verify calls
     mock_client.climate.get_homogeneous_series.assert_called_once()
     assert result == 0
@@ -462,12 +485,13 @@ def test_main_climate_data_type(mock_setup_logging, mock_stac_client_class, mock
 @pytest.mark.unit
 def test_resolve_station_id_direct():
     """Test resolve_station_id with direct station ID."""
-    from meteosuisse.cli import resolve_station_id
     from rich.console import Console
-    
+
+    from meteosuisse.cli import resolve_station_id
+
     mock_client = MagicMock()
     console = Console()
-    
+
     result = resolve_station_id(mock_client, "GVE", None, None, None, "ground", console)
     assert result == "GVE"
 
@@ -477,17 +501,18 @@ def test_resolve_station_id_direct():
 @patch("meteosuisse.cli.find_nearest_station")
 def test_resolve_station_id_with_lat_lon(mock_find_nearest, mock_stac_class):
     """Test resolve_station_id with lat/lon."""
-    from meteosuisse.cli import resolve_station_id
     from rich.console import Console
-    
+
+    from meteosuisse.cli import resolve_station_id
+
     mock_client = MagicMock()
     mock_client.config = MagicMock()
     console = Console()
-    
+
     mock_stac = MagicMock()
     mock_stac_class.return_value = mock_stac
     mock_find_nearest.return_value = ("GVE", 0.5)
-    
+
     result = resolve_station_id(mock_client, None, 46.247519, 6.127742, None, "ground", console)
     assert result == "GVE"
     mock_stac.close.assert_called_once()
@@ -499,19 +524,22 @@ def test_resolve_station_id_with_lat_lon(mock_find_nearest, mock_stac_class):
 @patch("meteosuisse.cli.find_nearest_station")
 def test_resolve_station_id_with_geometry(mock_find_nearest, mock_stac_class, mock_parse_geometry):
     """Test resolve_station_id with geometry."""
-    from meteosuisse.cli import resolve_station_id
     from rich.console import Console
-    
+
+    from meteosuisse.cli import resolve_station_id
+
     mock_client = MagicMock()
     mock_client.config = MagicMock()
     console = Console()
-    
+
     mock_stac = MagicMock()
     mock_stac_class.return_value = mock_stac
     mock_parse_geometry.return_value = (46.247519, 6.127742)
     mock_find_nearest.return_value = ("GVE", 0.5)
-    
-    result = resolve_station_id(mock_client, None, None, None, "46.247519,6.127742", "ground", console)
+
+    result = resolve_station_id(
+        mock_client, None, None, None, "46.247519,6.127742", "ground", console
+    )
     assert result == "GVE"
     mock_stac.close.assert_called_once()
 
@@ -519,12 +547,13 @@ def test_resolve_station_id_with_geometry(mock_find_nearest, mock_stac_class, mo
 @pytest.mark.unit
 def test_resolve_station_id_unknown_data_type():
     """Test resolve_station_id with unknown data type."""
-    from meteosuisse.cli import resolve_station_id
     from rich.console import Console
-    
+
+    from meteosuisse.cli import resolve_station_id
+
     mock_client = MagicMock()
     console = Console()
-    
+
     result = resolve_station_id(mock_client, None, None, None, None, "unknown", console)
     assert result is None
 
@@ -534,17 +563,18 @@ def test_resolve_station_id_unknown_data_type():
 @patch("meteosuisse.cli.find_nearest_station")
 def test_resolve_station_id_climate_data_type(mock_find_nearest, mock_stac_class):
     """Test resolve_station_id with climate data type (line 216)."""
-    from meteosuisse.cli import resolve_station_id
     from rich.console import Console
-    
+
+    from meteosuisse.cli import resolve_station_id
+
     mock_client = MagicMock()
     mock_client.config = MagicMock()
     console = Console()
-    
+
     mock_stac = MagicMock()
     mock_stac_class.return_value = mock_stac
     mock_find_nearest.return_value = ("GEN", 0.5)
-    
+
     result = resolve_station_id(mock_client, None, 46.247519, 6.127742, None, "climate", console)
     assert result == "GEN"
     # Verify it used the climate collection
@@ -558,7 +588,7 @@ def test_resolve_station_id_climate_data_type(mock_find_nearest, mock_stac_class
 def test_parse_date_iso_format():
     """Test parse_date with ISO format."""
     from meteosuisse.cli import parse_date
-    
+
     result = parse_date("2024-01-01T00:00:00Z")
     assert result.tzinfo is not None
 
@@ -567,7 +597,7 @@ def test_parse_date_iso_format():
 def test_parse_date_yyyy_mm_dd():
     """Test parse_date with YYYY-MM-DD format."""
     from meteosuisse.cli import parse_date
-    
+
     result = parse_date("2024-01-01")
     assert result.year == 2024
     assert result.month == 1
@@ -577,9 +607,10 @@ def test_parse_date_yyyy_mm_dd():
 @pytest.mark.unit
 def test_parse_date_invalid():
     """Test parse_date with invalid format."""
-    from meteosuisse.cli import parse_date
     import argparse
-    
+
+    from meteosuisse.cli import parse_date
+
     with pytest.raises(argparse.ArgumentTypeError):
         parse_date("invalid-date")
 
@@ -588,10 +619,12 @@ def test_parse_date_invalid():
 @patch("meteosuisse.cli.MeteoSwissClient")
 @patch("meteosuisse.cli.STACClient")
 @patch("meteosuisse.cli.setup_logging")
-def test_main_lat_without_lon(mock_setup_logging, mock_stac_client_class, mock_client_class, monkeypatch):
+def test_main_lat_without_lon(
+    mock_setup_logging, mock_stac_client_class, mock_client_class, monkeypatch
+):
     """Test CLI main function with --lat but no --lon (line 362-363)."""
     import sys
-    
+
     test_args = [
         "meteosuisse",
         "--lat",
@@ -600,7 +633,7 @@ def test_main_lat_without_lon(mock_setup_logging, mock_stac_client_class, mock_c
         "2024-01-01T00:00:00Z",
     ]
     monkeypatch.setattr(sys, "argv", test_args)
-    
+
     with pytest.raises(SystemExit):
         main()
 
@@ -609,10 +642,12 @@ def test_main_lat_without_lon(mock_setup_logging, mock_stac_client_class, mock_c
 @patch("meteosuisse.cli.MeteoSwissClient")
 @patch("meteosuisse.cli.STACClient")
 @patch("meteosuisse.cli.setup_logging")
-def test_main_lon_without_lat(mock_setup_logging, mock_stac_client_class, mock_client_class, monkeypatch):
+def test_main_lon_without_lat(
+    mock_setup_logging, mock_stac_client_class, mock_client_class, monkeypatch
+):
     """Test CLI main function with --lon but no --lat (line 364-365)."""
     import sys
-    
+
     # Provide --geometry to satisfy the mutually exclusive group, then --lon without --lat
     test_args = [
         "meteosuisse",
@@ -624,7 +659,7 @@ def test_main_lon_without_lat(mock_setup_logging, mock_stac_client_class, mock_c
         "2024-01-01T00:00:00Z",
     ]
     monkeypatch.setattr(sys, "argv", test_args)
-    
+
     with pytest.raises(SystemExit) as exc_info:
         main()
     # Should exit with code 2 (argument error)
@@ -636,21 +671,26 @@ def test_main_lon_without_lat(mock_setup_logging, mock_stac_client_class, mock_c
 @patch("meteosuisse.cli.STACClient")
 @patch("meteosuisse.cli.setup_logging")
 @patch("meteosuisse.cli.resolve_station_id")
-def test_main_unknown_data_type_else_branch(mock_resolve_station_id, mock_setup_logging, mock_stac_client_class, mock_client_class, tmp_path: Path, monkeypatch):
+def test_main_unknown_data_type_else_branch(
+    mock_resolve_station_id,
+    mock_setup_logging,
+    mock_stac_client_class,
+    mock_client_class,
+    tmp_path: Path,
+    monkeypatch,
+):
     """Test CLI main function else branch for unknown data type (line 447-448)."""
-    import sys
-    import argparse
     from datetime import datetime
-    
+
     mock_client = MagicMock()
     mock_client.config = MagicMock()
     mock_client_class.return_value = mock_client
-    
+
     mock_stac = MagicMock()
     mock_stac_client_class.return_value = mock_stac
-    
+
     mock_resolve_station_id.return_value = "GVE"
-    
+
     # Patch argparse to return args with unknown data_type
     with patch("meteosuisse.cli.argparse.ArgumentParser") as mock_parser_class:
         mock_parser = MagicMock()
@@ -668,7 +708,7 @@ def test_main_unknown_data_type_else_branch(mock_resolve_station_id, mock_setup_
         mock_args.verbose = False
         mock_parser.parse_args.return_value = mock_args
         mock_parser_class.return_value = mock_parser
-        
+
         result = main()
         assert result == 1  # Should return 1 for unknown data type (line 448)
 
@@ -678,18 +718,25 @@ def test_main_unknown_data_type_else_branch(mock_resolve_station_id, mock_setup_
 @patch("meteosuisse.cli.STACClient")
 @patch("meteosuisse.cli.setup_logging")
 @patch("meteosuisse.cli.resolve_station_id")
-def test_main_station_id_resolution_failed(mock_resolve_station_id, mock_setup_logging, mock_stac_client_class, mock_client_class, tmp_path: Path, monkeypatch):
+def test_main_station_id_resolution_failed(
+    mock_resolve_station_id,
+    mock_setup_logging,
+    mock_stac_client_class,
+    mock_client_class,
+    tmp_path: Path,
+    monkeypatch,
+):
     """Test CLI main function when station ID resolution fails (line 382-383)."""
     import sys
-    
+
     mock_client = MagicMock()
     mock_client_class.return_value = mock_client
-    
+
     mock_stac = MagicMock()
     mock_stac_client_class.return_value = mock_stac
-    
+
     mock_resolve_station_id.return_value = None
-    
+
     test_args = [
         "meteosuisse",
         "--lat",
@@ -702,7 +749,7 @@ def test_main_station_id_resolution_failed(mock_resolve_station_id, mock_setup_l
         str(tmp_path / "test_output.csv"),
     ]
     monkeypatch.setattr(sys, "argv", test_args)
-    
+
     result = main()
     assert result == 1
 
@@ -712,24 +759,31 @@ def test_main_station_id_resolution_failed(mock_resolve_station_id, mock_setup_l
 @patch("meteosuisse.cli.STACClient")
 @patch("meteosuisse.cli.setup_logging")
 @patch("meteosuisse.cli.resolve_station_id")
-def test_main_unknown_data_type(mock_resolve_station_id, mock_setup_logging, mock_stac_client_class, mock_client_class, tmp_path: Path, monkeypatch):
+def test_main_unknown_data_type(
+    mock_resolve_station_id,
+    mock_setup_logging,
+    mock_stac_client_class,
+    mock_client_class,
+    tmp_path: Path,
+    monkeypatch,
+):
     """Test CLI main function with unknown data type (line 447-448).
-    
+
     Note: The else branch at line 447 is unreachable in normal usage because argparse
     validates choices. This test verifies the code path exists but is defensive.
     """
     import sys
-    
+
     mock_client = MagicMock()
     mock_client.ground_based.collections.automatic_weather_stations = "test_collection"
     mock_client.config = MagicMock()
     mock_client_class.return_value = mock_client
-    
+
     mock_stac = MagicMock()
     mock_stac_client_class.return_value = mock_stac
-    
+
     mock_resolve_station_id.return_value = "GVE"
-    
+
     # Use valid data-type (argparse validates choices)
     test_args = [
         "meteosuisse",
@@ -743,11 +797,11 @@ def test_main_unknown_data_type(mock_resolve_station_id, mock_setup_logging, moc
         str(tmp_path / "test_output.csv"),
     ]
     monkeypatch.setattr(sys, "argv", test_args)
-    
+
     # Mock client to not have ground_based/climate to trigger else branch
     del mock_client.ground_based
     del mock_client.climate
-    
+
     result = main()
     # Should hit the else branch and return 1
     assert result == 1
@@ -757,31 +811,36 @@ def test_main_unknown_data_type(mock_resolve_station_id, mock_setup_logging, moc
 @patch("meteosuisse.cli.MeteoSwissClient")
 @patch("meteosuisse.cli.STACClient")
 @patch("meteosuisse.cli.setup_logging")
-def test_main_default_output_path(mock_setup_logging, mock_stac_client_class, mock_client_class, tmp_path: Path, monkeypatch):
+def test_main_default_output_path(
+    mock_setup_logging, mock_stac_client_class, mock_client_class, tmp_path: Path, monkeypatch
+):
     """Test CLI main function with default output path (line 460-464)."""
     import sys
-    
+
     mock_client = MagicMock()
     # Create a proper DataFrame with columns
-    df = pd.DataFrame({
-        "temperature": [10.0, 11.0],
-        "humidity": [80, 85],
-        "pressure": [1013.25, 1014.0],
-    }, index=pd.DatetimeIndex(["2024-01-01", "2024-01-02"], tz="UTC"))
+    df = pd.DataFrame(
+        {
+            "temperature": [10.0, 11.0],
+            "humidity": [80, 85],
+            "pressure": [1013.25, 1014.0],
+        },
+        index=pd.DatetimeIndex(["2024-01-01", "2024-01-02"], tz="UTC"),
+    )
     mock_client.ground_based.get_automatic_weather_stations.return_value = df
     mock_client.ground_based.collections.automatic_weather_stations = "test_collection"
     mock_client.config = MagicMock()
     mock_client_class.return_value = mock_client
-    
+
     mock_stac = MagicMock()
     mock_stac_client_class.return_value = mock_stac
-    
+
     # Mock APIConfig to return a test output dir
     with patch("meteosuisse.cli.APIConfig") as mock_config_class:
         mock_config = MagicMock()
         mock_config.artifacts_outputs_dir = tmp_path
         mock_config_class.return_value = mock_config
-        
+
         # Don't specify --output
         test_args = [
             "meteosuisse",
@@ -791,7 +850,7 @@ def test_main_default_output_path(mock_setup_logging, mock_stac_client_class, mo
             "2024-01-01T00:00:00Z",
         ]
         monkeypatch.setattr(sys, "argv", test_args)
-        
+
         result = main()
         assert result == 0
 
@@ -800,19 +859,21 @@ def test_main_default_output_path(mock_setup_logging, mock_stac_client_class, mo
 @patch("meteosuisse.cli.MeteoSwissClient")
 @patch("meteosuisse.cli.STACClient")
 @patch("meteosuisse.cli.setup_logging")
-def test_main_exception_with_verbose(mock_setup_logging, mock_stac_client_class, mock_client_class, tmp_path: Path, monkeypatch):
+def test_main_exception_with_verbose(
+    mock_setup_logging, mock_stac_client_class, mock_client_class, tmp_path: Path, monkeypatch
+):
     """Test CLI main function exception handling with --verbose (line 472-477)."""
     import sys
-    
+
     mock_client = MagicMock()
     mock_client.ground_based.get_automatic_weather_stations.side_effect = Exception("Test error")
     mock_client.ground_based.collections.automatic_weather_stations = "test_collection"
     mock_client.config = MagicMock()
     mock_client_class.return_value = mock_client
-    
+
     mock_stac = MagicMock()
     mock_stac_client_class.return_value = mock_stac
-    
+
     test_args = [
         "meteosuisse",
         "--station-id",
@@ -824,7 +885,7 @@ def test_main_exception_with_verbose(mock_setup_logging, mock_stac_client_class,
         str(tmp_path / "test_output.csv"),
     ]
     monkeypatch.setattr(sys, "argv", test_args)
-    
+
     result = main()
     assert result == 1
 
@@ -833,19 +894,21 @@ def test_main_exception_with_verbose(mock_setup_logging, mock_stac_client_class,
 @patch("meteosuisse.cli.MeteoSwissClient")
 @patch("meteosuisse.cli.STACClient")
 @patch("meteosuisse.cli.setup_logging")
-def test_main_exception_without_verbose(mock_setup_logging, mock_stac_client_class, mock_client_class, tmp_path: Path, monkeypatch):
+def test_main_exception_without_verbose(
+    mock_setup_logging, mock_stac_client_class, mock_client_class, tmp_path: Path, monkeypatch
+):
     """Test CLI main function exception handling without --verbose."""
     import sys
-    
+
     mock_client = MagicMock()
     mock_client.ground_based.get_automatic_weather_stations.side_effect = Exception("Test error")
     mock_client.ground_based.collections.automatic_weather_stations = "test_collection"
     mock_client.config = MagicMock()
     mock_client_class.return_value = mock_client
-    
+
     mock_stac = MagicMock()
     mock_stac_client_class.return_value = mock_stac
-    
+
     test_args = [
         "meteosuisse",
         "--station-id",
@@ -856,7 +919,7 @@ def test_main_exception_without_verbose(mock_setup_logging, mock_stac_client_cla
         str(tmp_path / "test_output.csv"),
     ]
     monkeypatch.setattr(sys, "argv", test_args)
-    
+
     result = main()
     assert result == 1
 
@@ -865,26 +928,30 @@ def test_main_exception_without_verbose(mock_setup_logging, mock_stac_client_cla
 @patch("meteosuisse.cli.MeteoSwissClient")
 @patch("meteosuisse.cli.STACClient")
 @patch("meteosuisse.cli.setup_logging")
-def test_main_with_end_date(mock_setup_logging, mock_stac_client_class, mock_client_class, tmp_path: Path, monkeypatch):
+def test_main_with_end_date(
+    mock_setup_logging, mock_stac_client_class, mock_client_class, tmp_path: Path, monkeypatch
+):
     """Test CLI main function with end date handling (line 403-409)."""
     import sys
-    from datetime import timezone
-    
+
     mock_client = MagicMock()
     # Create a proper DataFrame with columns
-    df = pd.DataFrame({
-        "temperature": [10.0, 11.0],
-        "humidity": [80, 85],
-        "pressure": [1013.25, 1014.0],
-    }, index=pd.DatetimeIndex(["2024-01-01", "2024-01-31"], tz="UTC"))
+    df = pd.DataFrame(
+        {
+            "temperature": [10.0, 11.0],
+            "humidity": [80, 85],
+            "pressure": [1013.25, 1014.0],
+        },
+        index=pd.DatetimeIndex(["2024-01-01", "2024-01-31"], tz="UTC"),
+    )
     mock_client.ground_based.get_automatic_weather_stations.return_value = df
     mock_client.ground_based.collections.automatic_weather_stations = "test_collection"
     mock_client.config = MagicMock()
     mock_client_class.return_value = mock_client
-    
+
     mock_stac = MagicMock()
     mock_stac_client_class.return_value = mock_stac
-    
+
     # Test with end date
     test_args = [
         "meteosuisse",
@@ -898,10 +965,10 @@ def test_main_with_end_date(mock_setup_logging, mock_stac_client_class, mock_cli
         str(tmp_path / "test_output.csv"),
     ]
     monkeypatch.setattr(sys, "argv", test_args)
-    
+
     result = main()
     assert result == 0
-    
+
     # Test without end date (should default to now)
     test_args2 = [
         "meteosuisse",
@@ -913,7 +980,7 @@ def test_main_with_end_date(mock_setup_logging, mock_stac_client_class, mock_cli
         str(tmp_path / "test_output2.csv"),
     ]
     monkeypatch.setattr(sys, "argv", test_args2)
-    
+
     result = main()
     assert result == 0
 
@@ -922,16 +989,19 @@ def test_main_with_end_date(mock_setup_logging, mock_stac_client_class, mock_cli
 @patch("meteosuisse.cli.parse_geometry_input")
 def test_resolve_station_id_geometry_parse_fails(mock_parse_geometry):
     """Test resolve_station_id when geometry parsing fails."""
-    from meteosuisse.cli import resolve_station_id
     from rich.console import Console
-    
+
+    from meteosuisse.cli import resolve_station_id
+
     mock_client = MagicMock()
     mock_client.config = MagicMock()
     console = Console()
-    
+
     mock_parse_geometry.return_value = None
-    
-    result = resolve_station_id(mock_client, None, None, None, "invalid_geometry", "ground", console)
+
+    result = resolve_station_id(
+        mock_client, None, None, None, "invalid_geometry", "ground", console
+    )
     # Should try lat/lon path, but since both are None, should return None
     assert result is None
 
@@ -941,18 +1011,18 @@ def test_resolve_station_id_geometry_parse_fails(mock_parse_geometry):
 @patch("meteosuisse.cli.find_nearest_station")
 def test_resolve_station_id_no_stations_found(mock_find_nearest, mock_stac_class):
     """Test resolve_station_id when no stations found."""
-    from meteosuisse.cli import resolve_station_id
     from rich.console import Console
-    
+
+    from meteosuisse.cli import resolve_station_id
+
     mock_client = MagicMock()
     mock_client.config = MagicMock()
     console = Console()
-    
+
     mock_stac = MagicMock()
     mock_stac_class.return_value = mock_stac
     mock_find_nearest.return_value = None
-    
+
     result = resolve_station_id(mock_client, None, 46.247519, 6.127742, None, "ground", console)
     assert result is None
     mock_stac.close.assert_called_once()
-

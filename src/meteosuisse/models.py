@@ -44,5 +44,3 @@ class CollectionMetadata:
     description: Optional[str] = None
     license: Optional[str] = None
     links: list[dict] = field(default_factory=list)
-
-

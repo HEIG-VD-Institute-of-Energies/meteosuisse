@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from typing import Any, Iterable, List
+from typing import Any, List
+
 import httpx
+
 from .config import APIConfig
 
 
@@ -118,5 +120,3 @@ class STACClient:
         if items:
             return items[0]
         return None
-
-

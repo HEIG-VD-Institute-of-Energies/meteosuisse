@@ -1,5 +1,6 @@
 import httpx
 import respx
+
 from meteosuisse.main_client import MeteoSwissClient
 
 
@@ -16,5 +17,3 @@ def test_radar_list_precipitation_items():
     )
     assert isinstance(items, list)
     assert items and items[0]["id"] == "rad1"
-
-

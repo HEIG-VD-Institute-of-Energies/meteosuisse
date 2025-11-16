@@ -1,10 +1,11 @@
-from io import StringIO
 from datetime import datetime, timezone
+
 import httpx
-import respx
 import pandas as pd
-from meteosuisse.main_client import MeteoSwissClient
+import respx
+
 from meteosuisse.config import TimeGranularity
+from meteosuisse.main_client import MeteoSwissClient
 
 
 @respx.mock
@@ -37,7 +38,9 @@ def test_climate_homogeneous_series_downloads_and_parses():
 
     client = MeteoSwissClient()
     # Force collection id to be non-empty for this test
-    client.climate.collections.climate_stations_homogeneous = "ch.meteoschweiz.ogd-climate-homogeneous"
+    client.climate.collections.climate_stations_homogeneous = (
+        "ch.meteoschweiz.ogd-climate-homogeneous"
+    )
     df = client.climate.get_homogeneous_series(
         station_id="GEN",
         granularity=TimeGranularity.DAILY,
@@ -78,7 +81,9 @@ def test_climate_homogeneous_series_date_filtering():
     )
 
     client = MeteoSwissClient()
-    client.climate.collections.climate_stations_homogeneous = "ch.meteoschweiz.ogd-climate-homogeneous"
+    client.climate.collections.climate_stations_homogeneous = (
+        "ch.meteoschweiz.ogd-climate-homogeneous"
+    )
     start = datetime(2024, 1, 2, tzinfo=timezone.utc)
     end = datetime(2024, 1, 2, 23, 59, tzinfo=timezone.utc)
     df = client.climate.get_homogeneous_series(
@@ -123,7 +128,9 @@ def test_climate_homogeneous_series_station_filtering():
     )
 
     client = MeteoSwissClient()
-    client.climate.collections.climate_stations_homogeneous = "ch.meteoschweiz.ogd-climate-homogeneous"
+    client.climate.collections.climate_stations_homogeneous = (
+        "ch.meteoschweiz.ogd-climate-homogeneous"
+    )
     df = client.climate.get_homogeneous_series(
         station_id="GEN",
         granularity=TimeGranularity.DAILY,
@@ -177,7 +184,9 @@ def test_climate_homogeneous_series_no_station_id():
     )
 
     client = MeteoSwissClient()
-    client.climate.collections.climate_stations_homogeneous = "ch.meteoschweiz.ogd-climate-homogeneous"
+    client.climate.collections.climate_stations_homogeneous = (
+        "ch.meteoschweiz.ogd-climate-homogeneous"
+    )
     df = client.climate.get_homogeneous_series(
         station_id=None,
         granularity=TimeGranularity.DAILY,
@@ -218,8 +227,10 @@ def test_climate_homogeneous_series_different_granularities():
     )
 
     client = MeteoSwissClient()
-    client.climate.collections.climate_stations_homogeneous = "ch.meteoschweiz.ogd-climate-homogeneous"
-    
+    client.climate.collections.climate_stations_homogeneous = (
+        "ch.meteoschweiz.ogd-climate-homogeneous"
+    )
+
     # Test daily
     df_d = client.climate.get_homogeneous_series(
         station_id="GEN",
@@ -252,12 +263,12 @@ def test_climate_homogeneous_series_empty_result():
     respx.post(f"{base}/search").mock(return_value=httpx.Response(200, json=search_json))
 
     client = MeteoSwissClient()
-    client.climate.collections.climate_stations_homogeneous = "ch.meteoschweiz.ogd-climate-homogeneous"
+    client.climate.collections.climate_stations_homogeneous = (
+        "ch.meteoschweiz.ogd-climate-homogeneous"
+    )
     df = client.climate.get_homogeneous_series(
         station_id="NONEXISTENT",
         granularity=TimeGranularity.DAILY,
     )
     assert isinstance(df, pd.DataFrame)
     assert df.empty
-
-

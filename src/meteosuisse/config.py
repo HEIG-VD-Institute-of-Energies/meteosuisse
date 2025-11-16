@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
+
 import httpx
 
 
@@ -81,5 +82,3 @@ class APIConfig:
     def logs_dir(self) -> Path:
         # Deprecated: kept for backward-compat. Prefer artifacts_logs_dir.
         return self.artifacts_logs_dir
-
-

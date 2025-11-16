@@ -1,9 +1,11 @@
 from pathlib import Path
+
+import httpx
 import pandas as pd
 import respx
-import httpx
-from meteosuisse.data_fetcher import download_csv_file, fetch_data_range
+
 from meteosuisse.config import APIConfig
+from meteosuisse.data_fetcher import download_csv_file, fetch_data_range
 
 
 @respx.mock
@@ -48,5 +50,3 @@ def test_fetch_data_range_tzaware(tmp_path: Path):
         idx_max = idx_max.tz_convert(None)
     assert idx_min >= pd.Timestamp("2024-01-02")
     assert idx_max <= pd.Timestamp("2024-01-03")
-
-

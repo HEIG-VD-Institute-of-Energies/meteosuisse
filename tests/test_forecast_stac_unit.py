@@ -1,5 +1,6 @@
 import httpx
 import respx
+
 from meteosuisse.main_client import MeteoSwissClient
 
 
@@ -49,5 +50,3 @@ def test_forecast_list_local_forecast_items():
     )
     assert isinstance(items, list)
     assert items and items[0]["id"] == "loc1"
-
-

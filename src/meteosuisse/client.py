@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from typing import Any
+
 import httpx
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+import orjson
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
+
 from .config import APIConfig
 from .exceptions import MeteoSwissAPIError
-import orjson
 
 
 class HttpClient:
@@ -39,5 +41,3 @@ class HttpClient:
             raise MeteoSwissAPIError(f"HTTP {e.response.status_code} for {path}") from e
         except httpx.HTTPError as e:
             raise MeteoSwissAPIError(str(e)) from e
-
-

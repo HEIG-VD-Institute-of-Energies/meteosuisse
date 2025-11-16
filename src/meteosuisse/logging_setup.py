@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+
 from loguru import logger
-import sys
+
 from .config import APIConfig
 
 
@@ -27,5 +28,3 @@ def setup_logging(app_name: str = "meteosuisse", logs_dir: Path | None = None) -
         ),
     )
     # Intentionally no console sink; use rich for CLI output.
-
-

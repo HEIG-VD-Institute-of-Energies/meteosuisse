@@ -1,6 +1,6 @@
-from .main_client import MeteoSwissClient
 from .config import APIConfig, TimeGranularity, UpdateFrequency
-from .models import Station, Parameter, DataInventory
+from .main_client import MeteoSwissClient
+from .models import DataInventory, Parameter, Station
 
 __all__ = [
     "MeteoSwissClient",
@@ -11,5 +11,3 @@ __all__ = [
     "Parameter",
     "DataInventory",
 ]
-
-

@@ -1,10 +1,11 @@
-from io import StringIO
 from datetime import datetime, timezone
-import pandas as pd
+
 import httpx
+import pandas as pd
 import respx
-from meteosuisse.main_client import MeteoSwissClient
+
 from meteosuisse.config import TimeGranularity, UpdateFrequency
+from meteosuisse.main_client import MeteoSwissClient
 
 
 @respx.mock
@@ -31,9 +32,9 @@ def test_ground_based_fetches_and_parses_csvs():
 
     # Mock CSV response - MeteoSwiss format with reference_timestamp (DD.MM.YYYY HH:MM)
     csv = "reference_timestamp,station_abbr,tre200h0\n01.01.2024 00:00,GVE,1.0\n01.01.2024 01:00,GVE,2.0\n"
-    respx.get("https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/gve/ogd-smn_gve_h_recent.csv").mock(
-        return_value=httpx.Response(200, text=csv)
-    )
+    respx.get(
+        "https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/gve/ogd-smn_gve_h_recent.csv"
+    ).mock(return_value=httpx.Response(200, text=csv))
 
     client = MeteoSwissClient()
     df = client.ground_based.get_automatic_weather_stations(
@@ -76,9 +77,9 @@ def test_ground_based_date_filtering():
 
     # CSV with data spanning multiple days
     csv = "reference_timestamp,station_abbr,tre200h0\n01.01.2024 00:00,GVE,1.0\n02.01.2024 00:00,GVE,2.0\n03.01.2024 00:00,GVE,3.0\n"
-    respx.get("https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/gve/ogd-smn_gve_h_recent.csv").mock(
-        return_value=httpx.Response(200, text=csv)
-    )
+    respx.get(
+        "https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/gve/ogd-smn_gve_h_recent.csv"
+    ).mock(return_value=httpx.Response(200, text=csv))
 
     client = MeteoSwissClient()
     start = datetime(2024, 1, 2, tzinfo=timezone.utc)
@@ -125,15 +126,15 @@ def test_ground_based_historical_assets():
 
     # Recent CSV (2025 data)
     csv_recent = "reference_timestamp,station_abbr,tre200h0\n01.01.2025 00:00,GVE,5.0\n"
-    respx.get("https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/gve/ogd-smn_gve_h_recent.csv").mock(
-        return_value=httpx.Response(200, text=csv_recent)
-    )
+    respx.get(
+        "https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/gve/ogd-smn_gve_h_recent.csv"
+    ).mock(return_value=httpx.Response(200, text=csv_recent))
 
     # Historical CSV (2024 data)
     csv_historical = "reference_timestamp,station_abbr,tre200h0\n15.11.2024 18:00,GVE,4.0\n15.11.2024 19:00,GVE,4.5\n"
-    respx.get("https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/gve/ogd-smn_gve_h_historical_2020-2029.csv").mock(
-        return_value=httpx.Response(200, text=csv_historical)
-    )
+    respx.get(
+        "https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/gve/ogd-smn_gve_h_historical_2020-2029.csv"
+    ).mock(return_value=httpx.Response(200, text=csv_historical))
 
     client = MeteoSwissClient()
     # Request data from 2024-11-15 to 2025-01-01 (spans historical and recent)
@@ -188,14 +189,14 @@ def test_ground_based_no_station_id():
     respx.post(f"{base}/search").mock(return_value=httpx.Response(200, json=search_json))
 
     csv_gve = "reference_timestamp,station_abbr,tre200h0\n01.01.2024 00:00,GVE,1.0\n"
-    respx.get("https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/gve/ogd-smn_gve_h_recent.csv").mock(
-        return_value=httpx.Response(200, text=csv_gve)
-    )
+    respx.get(
+        "https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/gve/ogd-smn_gve_h_recent.csv"
+    ).mock(return_value=httpx.Response(200, text=csv_gve))
 
     csv_ber = "reference_timestamp,station_abbr,tre200h0\n01.01.2024 00:00,BER,2.0\n"
-    respx.get("https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/ber/ogd-smn_ber_h_recent.csv").mock(
-        return_value=httpx.Response(200, text=csv_ber)
-    )
+    respx.get(
+        "https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/ber/ogd-smn_ber_h_recent.csv"
+    ).mock(return_value=httpx.Response(200, text=csv_ber))
 
     client = MeteoSwissClient()
     df = client.ground_based.get_automatic_weather_stations(
@@ -236,9 +237,9 @@ def test_ground_based_different_granularities():
 
     # Test hourly
     csv_h = "reference_timestamp,station_abbr,tre200h0\n01.01.2024 00:00,GVE,1.0\n01.01.2024 01:00,GVE,2.0\n"
-    respx.get("https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/gve/ogd-smn_gve_h_recent.csv").mock(
-        return_value=httpx.Response(200, text=csv_h)
-    )
+    respx.get(
+        "https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/gve/ogd-smn_gve_h_recent.csv"
+    ).mock(return_value=httpx.Response(200, text=csv_h))
 
     client = MeteoSwissClient()
     df_h = client.ground_based.get_automatic_weather_stations(
@@ -252,9 +253,9 @@ def test_ground_based_different_granularities():
 
     # Test daily
     csv_d = "reference_timestamp,station_abbr,tre200d0\n01.01.2024 00:00,GVE,1.5\n"
-    respx.get("https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/gve/ogd-smn_gve_d_recent.csv").mock(
-        return_value=httpx.Response(200, text=csv_d)
-    )
+    respx.get(
+        "https://data.geo.admin.ch/ch.meteoschweiz.ogd-smn/gve/ogd-smn_gve_d_recent.csv"
+    ).mock(return_value=httpx.Response(200, text=csv_d))
 
     df_d = client.ground_based.get_automatic_weather_stations(
         station_id="GVE",
@@ -308,5 +309,3 @@ def test_ground_based_no_assets():
     )
     assert isinstance(df, pd.DataFrame)
     assert df.empty
-
-

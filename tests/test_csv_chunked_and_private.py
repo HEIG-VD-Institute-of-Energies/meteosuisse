@@ -1,6 +1,8 @@
 from pathlib import Path
+
 import pandas as pd
-from meteosuisse.csv_parser import _read_csv  # type: ignore
+
+from meteosuisse.csv_parser import _read_csv
 
 
 def test_read_csv_chunked(tmp_path: Path):
@@ -11,5 +13,3 @@ def test_read_csv_chunked(tmp_path: Path):
     assert isinstance(df, pd.DataFrame)
     assert len(df) == 3
     assert pd.api.types.is_datetime64_any_dtype(df["time"])
-
-

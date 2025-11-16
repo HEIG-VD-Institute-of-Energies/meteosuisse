@@ -1,8 +1,10 @@
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+
 import pandas as pd
+
 from meteosuisse.config import APIConfig
-from meteosuisse.data_fetcher import merge_csv_files, fetch_data_range
+from meteosuisse.data_fetcher import fetch_data_range, merge_csv_files
 
 
 def _write_csv(path: Path, rows: list[tuple[str, float]]) -> None:
@@ -16,7 +18,9 @@ def test_merge_csv_files_deduplicates_and_sorts(tmp_path: Path):
     _write_csv(p2, [("2024-01-01T01:00:00", 3.0), ("2024-01-01T02:00:00", 4.0)])
 
     df = merge_csv_files([p1, p2], timestamp_col="time")
-    assert list(df.index.astype("datetime64[ns]")) == list(df.index.astype("datetime64[ns]").sort_values())
+    assert list(df.index.astype("datetime64[ns]")) == list(
+        df.index.astype("datetime64[ns]").sort_values()
+    )
     # duplicate 01:00 keeps last (from p2)
     assert df.loc[pd.Timestamp("2024-01-01T01:00:00")]["value"] == 3.0
     assert len(df) == 3
@@ -45,5 +49,3 @@ def test_fetch_data_range_filters_by_start_end(tmp_path: Path, monkeypatch):
     assert not df.empty
     assert df.index.min() >= pd.Timestamp("2024-01-02")
     assert df.index.max() <= pd.Timestamp("2024-01-03")
-
-

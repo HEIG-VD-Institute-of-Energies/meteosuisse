@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from pathlib import Path
-from typing import Optional
-import pandas as pd
 from io import StringIO
+from typing import Optional
+
 import httpx
-from ..config import APIConfig, TimeGranularity
+import pandas as pd
+
 from ..client import HttpClient
-from ..data_fetcher import fetch_data_range
+from ..config import APIConfig, TimeGranularity
 from ..stac_client import STACClient
 
 
@@ -91,7 +91,9 @@ class ClimateData:
         if passed_start is not None:
             start_year = passed_start.year
             end_year = passed_end.year if passed_end else start_year
-            current_year = pd.Timestamp.now(tz=passed_start.tzinfo if passed_start.tzinfo else None).year
+            current_year = pd.Timestamp.now(
+                tz=passed_start.tzinfo if passed_start.tzinfo else None
+            ).year
             if start_year < current_year:
                 needs_historical = True
                 for year in range(start_year, min(end_year + 1, current_year + 1)):
@@ -105,10 +107,12 @@ class ClimateData:
             for asset_key, asset in assets.items():
                 href = str(asset.get("href", ""))
                 atype = str(asset.get("type", ""))
-                if not (href.lower().endswith(".csv") or "text/csv" in atype or "text/plain" in atype):
+                if not (
+                    href.lower().endswith(".csv") or "text/csv" in atype or "text/plain" in atype
+                ):
                     continue
                 asset_lower = asset_key.lower()
-                
+
                 # Check if asset matches requested granularity
                 # Pattern: climate_STATION_gran.csv or *_gran_*.csv
                 matches_granularity = (
@@ -116,13 +120,13 @@ class ClimateData:
                     or asset_lower.endswith(f"_{gran_char}.csv")
                     or f"_{gran_char}." in asset_lower
                 )
-                
+
                 if not matches_granularity:
                     continue
-                
+
                 # Include assets matching requested granularity
                 urls.append(href)
-                
+
                 # Also include historical assets if date range requires them
                 if needs_historical and "historical" in asset_lower:
                     for decade_start in relevant_decades:
@@ -165,7 +169,9 @@ class ClimateData:
                             if parsed_ddmm.isna().all():
                                 df[tcol] = pd.to_datetime(df[tcol], errors="coerce", utc=True)
                             else:
-                                df[tcol] = parsed_ddmm  # Timezone-naive, will be localized at line 213 if needed
+                                df[tcol] = (
+                                    parsed_ddmm  # Timezone-naive, will be localized at line 213 if needed
+                                )
                             # Remove rows with invalid timestamps
                             df = df[df[tcol].notna()]
                             if df.empty:
@@ -189,7 +195,15 @@ class ClimateData:
         if station_id:
             sid = station_id.upper()
             matched = False
-            for scol in ("station", "station_id", "stn", "stationname", "name", "station_code", "stationcode"):
+            for scol in (
+                "station",
+                "station_id",
+                "stn",
+                "stationname",
+                "name",
+                "station_code",
+                "stationcode",
+            ):
                 if scol in out.columns:
                     col = out[scol].astype(str).str.upper()
                     out = out[col.eq(sid)]
@@ -202,7 +216,7 @@ class ClimateData:
                     mask = None
                     for c in obj_cols:
                         colu = out[c].astype(str).str.upper()
-                        col_mask = colu.eq(sid) | colu.str.contains(fr"\b{sid}\b", regex=True)
+                        col_mask = colu.eq(sid) | colu.str.contains(rf"\b{sid}\b", regex=True)
                         mask = col_mask if mask is None else (mask | col_mask)
                     if mask is not None and mask.any():
                         out = out[mask]
@@ -214,7 +228,7 @@ class ClimateData:
                 out.index = out.index.tz_localize("UTC")
             else:
                 out.index = out.index.tz_convert("UTC")
-            
+
             out = out[out.index.notna()]
             if passed_start is not None:
                 start_ts = pd.Timestamp(passed_start)
@@ -230,12 +244,10 @@ class ClimateData:
                 else:
                     end_ts = end_ts.tz_convert("UTC")
                 out = out[out.index <= end_ts]
-        
+
         # Remove duplicate index entries (keep last)
         if isinstance(out.index, pd.DatetimeIndex):
             out = out[~out.index.duplicated(keep="last")]
             out = out.sort_index()
 
         return out
-
-

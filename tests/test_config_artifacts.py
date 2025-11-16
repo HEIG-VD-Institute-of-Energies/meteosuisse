@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from meteosuisse.config import APIConfig
 
 
@@ -11,5 +12,3 @@ def test_artifacts_dirs_created(tmp_path: Path, monkeypatch):
     assert cfg.artifacts_figures_dir.exists()
     assert cfg.artifacts_reports_dir.exists()
     assert cfg.artifacts_outputs_dir.exists()
-
-
