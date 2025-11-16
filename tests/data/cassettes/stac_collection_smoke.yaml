@@ -1,0 +1,66 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      host:
+      - data.geo.admin.ch
+      user-agent:
+      - MeteoSwiss-Python-Client/1.0
+    method: GET
+    uri: https://data.geo.admin.ch/api/stac/v1/collections/collections
+  response:
+    body:
+      string: '{"code":404,"description":"Not found."}'
+    headers:
+      Allow:
+      - GET, PUT, PATCH, DELETE, HEAD, OPTIONS
+      Cache-Control:
+      - max-age=600, public
+      Connection:
+      - keep-alive
+      Content-Length:
+      - '39'
+      Content-Type:
+      - application/json
+      Cross-Origin-Opener-Policy:
+      - same-origin
+      Date:
+      - Sun, 16 Nov 2025 15:14:54 GMT
+      Expires:
+      - Sun, 16 Nov 2025 15:24:54 GMT
+      Server:
+      - gunicorn
+      Vary:
+      - Accept
+      Via:
+      - 1.1 94c51a8bc199735f3232bfc29391d104.cloudfront.net (CloudFront)
+      X-Amz-Cf-Id:
+      - dUhAFDKX37DLxPlD-bAhEKj8yBkBilaDRndeuju4r6eIeoZ3yIof-Q==
+      X-Amz-Cf-Pop:
+      - ZRH52-P1
+      X-Cache:
+      - Error from cloudfront
+      access-control-allow-headers:
+      - Content-Type,Accept,Accept-Language
+      access-control-allow-methods:
+      - GET,HEAD
+      access-control-allow-origin:
+      - '*'
+      apigw-requestid:
+      - UJGRVhMrFiAEJ9A=
+      referrer-policy:
+      - same-origin
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - DENY
+    status:
+      code: 404
+      message: Not Found
+version: 1

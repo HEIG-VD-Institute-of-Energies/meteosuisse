@@ -16,7 +16,7 @@ class HttpClient:
             headers=config.headers(),
             timeout=config.httpx_timeout(),
             limits=config.httpx_limits(),
-            http2=True,
+            http2=False,
             follow_redirects=True,
             trust_env=False,
         )
