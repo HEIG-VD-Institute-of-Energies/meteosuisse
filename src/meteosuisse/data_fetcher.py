@@ -35,16 +35,26 @@ def fetch_data_range(
     start: datetime | None,
     end: datetime | None,
 ) -> pd.DataFrame:
-    client = httpx.Client(timeout=config.httpx_timeout(), limits=config.httpx_limits(), http2=True)
+    client = httpx.Client(timeout=config.httpx_timeout(), limits=config.httpx_limits(), http2=False)
     try:
         for url, path in zip(urls, cache_paths):
             if not path.exists():
                 download_csv_file(url, path, client)
         df = merge_csv_files(cache_paths, timestamp_col=timestamp_col)
+        if df.empty:
+            return df
         if start is not None:
-            df = df[df.index >= pd.Timestamp(start, tz="UTC").tz_convert(None) if df.index.tz is not None else pd.Timestamp(start)]
+            if getattr(df.index, "tz", None) is not None:
+                start_ts = pd.Timestamp(start, tz="UTC").tz_convert(df.index.tz)
+            else:
+                start_ts = pd.Timestamp(start)
+            df = df[df.index >= start_ts]
         if end is not None:
-            df = df[df.index <= pd.Timestamp(end, tz="UTC").tz_convert(None) if df.index.tz is not None else pd.Timestamp(end)]
+            if getattr(df.index, "tz", None) is not None:
+                end_ts = pd.Timestamp(end, tz="UTC").tz_convert(df.index.tz)
+            else:
+                end_ts = pd.Timestamp(end)
+            df = df[df.index <= end_ts]
         return df
     finally:
         client.close()
