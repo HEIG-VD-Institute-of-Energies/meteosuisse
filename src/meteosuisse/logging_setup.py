@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 from pathlib import Path
+
 from loguru import logger
-import sys
+
+from .config import APIConfig
 
 
 def setup_logging(app_name: str = "meteosuisse", logs_dir: Path | None = None) -> None:
     if logs_dir is None:
-        logs_dir = Path.cwd() / "logs"
-    logs_dir.mkdir(parents=True, exist_ok=True)
+        # Default to canonical artifacts/logs directory
+        cfg = APIConfig()
+        logs_dir = cfg.artifacts_logs_dir
 
     logger.remove()
     # File: DEBUG, rotation 1 MB
@@ -24,5 +27,4 @@ def setup_logging(app_name: str = "meteosuisse", logs_dir: Path | None = None) -
             "{process.name}:{thread.name} | {name}:{function}:{line} - {message}"
         ),
     )
-
-
+    # Intentionally no console sink; use rich for CLI output.

@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from typing import Any
+
+from .client import HttpClient
 from .config import APIConfig
-from .modules.ground_based import GroundBasedMeasurements
 from .modules.atmosphere import AtmosphereMeasurements
 from .modules.climate import ClimateData
-from .modules.radar import RadarData
 from .modules.forecast import ForecastData
-from .client import HttpClient
+from .modules.ground_based import GroundBasedMeasurements
+from .modules.radar import RadarData
 
 
 class MeteoSwissClient:
@@ -31,5 +32,3 @@ class MeteoSwissClient:
 
     def get_collection_info(self, collection_id: str) -> dict[str, Any]:
         return self._http.get_json(f"/collections/{collection_id}")
-
-
