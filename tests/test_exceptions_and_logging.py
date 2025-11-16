@@ -23,9 +23,30 @@ def test_http_errors_are_mapped_to_custom_exception(monkeypatch):
     http.close()
 
 
+def test_generic_httpx_error_is_mapped(monkeypatch):
+    cfg = APIConfig()
+    http = HttpClient(cfg)
+
+    def _transport_error(path, params=None):
+        raise httpx.TransportError("network down")
+
+    monkeypatch.setattr(http._client, "get", _transport_error)  # type: ignore[attr-defined]
+    with pytest.raises(MeteoSwissAPIError):
+        http.get_json("/any")
+    http.close()
+
+
 def test_setup_logging_creates_log_file(tmp_path: Path):
     setup_logging(app_name="meteosuisse_test", logs_dir=tmp_path)
     files = list(tmp_path.glob("*.log"))
     assert files, "Expected a log file to be created"
+
+def test_setup_logging_default_dir(monkeypatch, tmp_path: Path):
+    # Cover logs_dir None branch by using CWD logs path
+    monkeypatch.chdir(tmp_path)
+    setup_logging(app_name="default_dir_test")
+    logs_dir = tmp_path / "logs"
+    assert logs_dir.exists()
+    assert list(logs_dir.glob("*.log"))
 
 
