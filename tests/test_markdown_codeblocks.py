@@ -61,6 +61,12 @@ def test_markdown_codeblocks_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
                 # Skip dependent snippets that reference an external context (e.g., 'client')
                 if "client." in code and "client =" not in code and "MeteoSwissClient(" not in code:
                     continue
+                # Skip DataFrame output examples (they show DataFrame representation, not executable code)
+                if code.strip().startswith("#") and ("station_abbr" in code or "stationcode" in code) and "=" not in code:
+                    continue
+                # Skip code blocks that are just comments or examples without imports
+                if not any(keyword in code for keyword in ["import", "from", "=", "def", "class", "print", "assert"]):
+                    continue
                 # Write snippet to temp file and run with uv
                 py_file = tmp_path / f"snippet_{abs(hash(code))}.py"
                 py_file.write_text(code, encoding="utf-8")

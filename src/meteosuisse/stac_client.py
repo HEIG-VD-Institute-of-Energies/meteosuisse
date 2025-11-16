@@ -81,18 +81,23 @@ class STACClient:
             ids_lower = [i.lower() for i in ids]
             features = [item for item in all_items if item.get("id", "").lower() in ids_lower]
 
-        # Follow pagination if present (only if not using ids filter)
-        if not ids:
+        # Follow pagination if present (only if not using ids filter and limit allows)
+        # For performance, only paginate if we haven't reached the requested limit
+        if not ids and len(features) < limit:
             next_link = None
             for link in data.get("links", []):
                 if link.get("rel") == "next" and link.get("href"):
                     next_link = link["href"]
                     break
-            while next_link:
+            # Limit pagination to avoid timeouts (max 3 pages = ~600 items)
+            max_pages = 3
+            page_count = 0
+            while next_link and page_count < max_pages and len(features) < limit:
                 r2 = self._client.get(next_link)
                 r2.raise_for_status()
                 data2 = r2.json()
                 features.extend(data2.get("features", []))
+                page_count += 1
                 next_link = None
                 for link in data2.get("links", []):
                     if link.get("rel") == "next" and link.get("href"):

@@ -11,8 +11,12 @@ dependencies = [
     "rich>=13.7.1",
     "orjson>=3.10.7",
     "python-dateutil>=2.9.0.post0",
-    "tenacity>=9.0.0"
+    "tenacity>=9.0.0",
+    "shapely>=2.0.0"
 ]
+
+[project.scripts]
+meteosuisse = "meteosuisse.cli:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
