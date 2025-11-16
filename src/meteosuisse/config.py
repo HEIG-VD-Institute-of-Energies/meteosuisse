@@ -36,6 +36,41 @@ class APIConfig:
     def headers(self) -> dict[str, str]:
         return {"User-Agent": self.user_agent, "Accept": "application/json"}
 
+    # Canonical directories
+    @property
+    def project_root(self) -> Path:
+        return Path.cwd()
+
+    @property
+    def artifacts_dir(self) -> Path:
+        d = self.project_root / "artifacts"
+        d.mkdir(parents=True, exist_ok=True)
+        return d
+
+    @property
+    def artifacts_logs_dir(self) -> Path:
+        d = self.artifacts_dir / "logs"
+        d.mkdir(parents=True, exist_ok=True)
+        return d
+
+    @property
+    def artifacts_figures_dir(self) -> Path:
+        d = self.artifacts_dir / "figures"
+        d.mkdir(parents=True, exist_ok=True)
+        return d
+
+    @property
+    def artifacts_reports_dir(self) -> Path:
+        d = self.artifacts_dir / "reports"
+        d.mkdir(parents=True, exist_ok=True)
+        return d
+
+    @property
+    def artifacts_outputs_dir(self) -> Path:
+        d = self.artifacts_dir / "outputs"
+        d.mkdir(parents=True, exist_ok=True)
+        return d
+
     @property
     def data_dir(self) -> Path:
         d = Path.cwd() / "data"
@@ -44,8 +79,7 @@ class APIConfig:
 
     @property
     def logs_dir(self) -> Path:
-        d = Path.cwd() / "logs"
-        d.mkdir(parents=True, exist_ok=True)
-        return d
+        # Deprecated: kept for backward-compat. Prefer artifacts_logs_dir.
+        return self.artifacts_logs_dir
 
 

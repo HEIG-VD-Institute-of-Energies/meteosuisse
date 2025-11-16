@@ -1,6 +1,7 @@
 import pandas as pd
 import pytest
 from meteosuisse.main_client import MeteoSwissClient
+from meteosuisse.config import APIConfig
 
 
 def test_atmosphere_not_implemented():
@@ -15,5 +16,18 @@ def test_climate_get_homogeneous_series_no_network(monkeypatch):
     monkeypatch.setattr(client.climate, "_collection_info", lambda x: {"id": x})
     df = client.climate.get_homogeneous_series()
     assert isinstance(df, pd.DataFrame)
+
+
+def test_climate_collection_info_monkeypatched(monkeypatch):
+    client = MeteoSwissClient()
+    # Cover _collection_info helper
+    called = {}
+    def fake_get_json(path):
+        called["path"] = path
+        return {"ok": True}
+    monkeypatch.setattr(client.climate._http, "get_json", lambda p: fake_get_json(p))  # type: ignore[attr-defined]
+    info = client.climate._collection_info("abc")
+    assert info == {"ok": True}
+    assert "collections/abc" in called["path"]
 
 

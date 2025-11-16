@@ -45,7 +45,7 @@ def test_setup_logging_default_dir(monkeypatch, tmp_path: Path):
     # Cover logs_dir None branch by using CWD logs path
     monkeypatch.chdir(tmp_path)
     setup_logging(app_name="default_dir_test")
-    logs_dir = tmp_path / "logs"
+    logs_dir = tmp_path / "artifacts" / "logs"
     assert logs_dir.exists()
     assert list(logs_dir.glob("*.log"))
 
