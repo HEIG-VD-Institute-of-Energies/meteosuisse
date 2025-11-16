@@ -107,6 +107,57 @@ def test_climate_get_homogeneous_series_historical_assets(mock_read_csv, mock_ht
 @patch("meteosuisse.modules.climate.STACClient")
 @patch("meteosuisse.modules.climate.httpx.Client")
 @patch("meteosuisse.modules.climate.pd.read_csv")
+def test_climate_get_homogeneous_series_duplicate_historical_assets(mock_read_csv, mock_httpx_client, mock_stac_class):
+    """Test get_homogeneous_series to ensure duplicate historical assets are not added (line 132)."""
+    config = APIConfig()
+    climate = ClimateData(config)
+    
+    mock_stac = MagicMock()
+    # Create a scenario where a historical asset is processed twice:
+    # 1. First asset matches granularity and gets added to urls at line 124
+    # 2. Then in the historical loop (lines 127-133), it checks if href not in urls before adding
+    #    This test ensures line 132 (if href not in urls: urls.append(href)) is hit
+    mock_item = {
+        "id": "gen",
+        "assets": {
+            # Asset that matches granularity AND historical - will be added at line 124
+            # Then in the historical loop, it will check line 132 (if href not in urls)
+            "climate_gen_d_historical_2020-2029.csv": {
+                "href": "http://example.com/climate_gen_d_historical_2020-2029.csv",
+                "type": "text/csv",
+            },
+        },
+    }
+    mock_stac.search_items.return_value = [mock_item]
+    mock_stac_class.return_value = mock_stac
+    
+    mock_response = MagicMock()
+    mock_response.text = "time,value\n2020-01-01,5.0\n"
+    mock_response.raise_for_status = MagicMock()
+    mock_httpx_client.return_value.__enter__.return_value.get.return_value = mock_response
+    
+    df = pd.DataFrame({"value": [5.0]}, index=pd.DatetimeIndex(["2020-01-01"], tz="UTC"))
+    mock_read_csv.return_value = df
+    
+    result = climate.get_homogeneous_series(
+        station_id="GEN",
+        granularity=TimeGranularity.DAILY,
+        start=datetime(2020, 1, 1),
+        end=datetime(2020, 1, 31),
+    )
+    
+    assert isinstance(result, pd.DataFrame)
+    # The asset matches granularity (added at line 124) AND historical (line 132 check)
+    # Line 132 should be hit: if href not in urls: urls.append(href)
+    # But since href was already added at line 124, it should NOT be added again
+    # So we should only download once
+    assert mock_httpx_client.return_value.__enter__.return_value.get.call_count == 1
+
+
+@pytest.mark.unit
+@patch("meteosuisse.modules.climate.STACClient")
+@patch("meteosuisse.modules.climate.httpx.Client")
+@patch("meteosuisse.modules.climate.pd.read_csv")
 def test_climate_get_homogeneous_series_ddmm_format_else_branch(mock_read_csv, mock_httpx_client, mock_stac_class):
     """Test get_homogeneous_series uses parsed_ddmm when not all NaT (line 167)."""
     config = APIConfig()
