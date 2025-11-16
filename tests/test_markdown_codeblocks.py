@@ -2,13 +2,11 @@ from __future__ import annotations
 
 import os
 import re
-import shlex
 import subprocess
 from pathlib import Path
 from typing import Iterable, Tuple
 
 import pytest
-
 
 FENCE_RE = re.compile(r"```(python|bash)\s*\n(.*?)\n```", re.DOTALL)
 
@@ -61,6 +59,19 @@ def test_markdown_codeblocks_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
                 # Skip dependent snippets that reference an external context (e.g., 'client')
                 if "client." in code and "client =" not in code and "MeteoSwissClient(" not in code:
                     continue
+                # Skip DataFrame output examples (they show DataFrame representation, not executable code)
+                if (
+                    code.strip().startswith("#")
+                    and ("station_abbr" in code or "stationcode" in code)
+                    and "=" not in code
+                ):
+                    continue
+                # Skip code blocks that are just comments or examples without imports
+                if not any(
+                    keyword in code
+                    for keyword in ["import", "from", "=", "def", "class", "print", "assert"]
+                ):
+                    continue
                 # Write snippet to temp file and run with uv
                 py_file = tmp_path / f"snippet_{abs(hash(code))}.py"
                 py_file.write_text(code, encoding="utf-8")
@@ -74,7 +85,9 @@ def test_markdown_codeblocks_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
                 # Write bash to temp file and execute
                 sh_file = tmp_path / f"snippet_{abs(hash(code))}.sh"
                 sh_file.write_text(code, encoding="utf-8")
-                res = subprocess.run(["bash", str(sh_file)], env=env, capture_output=True, text=True, timeout=30)
+                res = subprocess.run(
+                    ["bash", str(sh_file)], env=env, capture_output=True, text=True, timeout=30
+                )
                 assert (
                     res.returncode == 0
                 ), f"Bash snippet failed ({md}):\nSTDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
@@ -82,5 +95,3 @@ def test_markdown_codeblocks_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 
     if not ran_any:
         pytest.skip("No eligible code blocks to run in markdown files.")
-
-

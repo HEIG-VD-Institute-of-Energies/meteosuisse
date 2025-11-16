@@ -1,10 +1,10 @@
-import os
 import datetime as dt
+import os
+import sys
 from pathlib import Path
+
 import pytest
 import vcr
-import sys
-
 
 CASSETTE_DIR = Path(__file__).parent / "data" / "cassettes"
 
@@ -33,9 +33,8 @@ def pytest_collection_modifyitems(config, items):
         if "live" in item.keywords and not run_live:
             item.add_marker(pytest.mark.skip(reason="RUN_LIVE_TESTS=1 required"))
 
+
 # Ensure src/ is importable without installation
 SRC_ROOT = Path(__file__).resolve().parents[1] / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
-
-

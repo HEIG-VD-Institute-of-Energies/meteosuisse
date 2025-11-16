@@ -1,10 +1,12 @@
 from pathlib import Path
+
 import pandas as pd
+
 from meteosuisse.csv_parser import (
-    parse_stations_csv,
-    parse_parameters_csv,
     parse_data_inventory_csv,
     parse_measurement_data_csv,
+    parse_parameters_csv,
+    parse_stations_csv,
 )
 
 
@@ -32,5 +34,3 @@ def test_parse_measurement_data_csv_sets_index(tmp_path: Path):
     assert isinstance(df.index, pd.DatetimeIndex)
     assert df.index.is_monotonic_increasing
     assert "value" in df.columns
-
-

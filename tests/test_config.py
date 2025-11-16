@@ -1,4 +1,5 @@
 import httpx
+
 from meteosuisse.config import APIConfig, TimeGranularity, UpdateFrequency
 
 
@@ -24,5 +25,3 @@ def test_api_config_headers_and_timeout_dirs(tmp_path, monkeypatch):
     # data/logs dirs created under CWD
     assert cfg.data_dir.exists()
     assert cfg.logs_dir.exists()
-
-

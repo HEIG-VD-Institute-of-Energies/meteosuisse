@@ -16,5 +16,3 @@ class DataNotAvailableError(MeteoSwissAPIError):
 
 class InvalidDateRangeError(MeteoSwissAPIError):
     pass
-
-

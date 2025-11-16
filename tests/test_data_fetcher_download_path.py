@@ -1,9 +1,11 @@
 from pathlib import Path
-import respx
+
 import httpx
 import pandas as pd
-from meteosuisse.data_fetcher import fetch_data_range
+import respx
+
 from meteosuisse.config import APIConfig
+from meteosuisse.data_fetcher import fetch_data_range
 
 
 @respx.mock
@@ -25,5 +27,3 @@ def test_fetch_data_range_triggers_download(tmp_path: Path):
     assert cache.exists()
     assert isinstance(df, pd.DataFrame)
     assert not df.empty
-
-

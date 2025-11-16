@@ -1,9 +1,19 @@
 from __future__ import annotations
 
-from rich.console import Console
-from rich.table import Table
-from meteosuisse.logging_setup import setup_logging
-from meteosuisse.main_client import MeteoSwissClient
+import sys
+from pathlib import Path
+
+# Allow running directly from repo without editable install
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SRC_DIR = REPO_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
+from rich.console import Console  # noqa: E402
+from rich.table import Table  # noqa: E402
+
+from meteosuisse.logging_setup import setup_logging  # noqa: E402
+from meteosuisse.main_client import MeteoSwissClient  # noqa: E402
 
 
 def main() -> None:
@@ -22,5 +32,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-

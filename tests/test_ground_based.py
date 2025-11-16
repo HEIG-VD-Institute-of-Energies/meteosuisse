@@ -1,9 +1,11 @@
 import os
 from pathlib import Path
+
 import pandas as pd
 import pytest
-from meteosuisse.main_client import MeteoSwissClient
+
 from meteosuisse.config import TimeGranularity, UpdateFrequency
+from meteosuisse.main_client import MeteoSwissClient
 
 
 @pytest.mark.integration
@@ -23,5 +25,3 @@ def test_ground_based_automatic_weather_stations_shape(vcr_cassette, jan_2024_we
         )
         # Current implementation returns a DataFrame (may be empty until URL resolution implemented)
         assert isinstance(df, pd.DataFrame)
-
-

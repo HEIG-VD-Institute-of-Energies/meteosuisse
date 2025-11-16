@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
+
 import pytest
+
 from meteosuisse.main_client import MeteoSwissClient
 
 
@@ -37,5 +39,3 @@ def test_get_collection_info_recorded(vcr_cassette):
         except Exception:
             # Accept failure if endpoint not valid; presence of cassette ensures stability
             pass
-
-
